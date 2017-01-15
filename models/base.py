@@ -51,24 +51,32 @@ class FieldMcs(type):
 
     def __new__(mcs, name, bases, dict_):
         cls = type(name, bases, dict_)
-        fields = self.get_all_fields(bases, dict_)
+        fields = mcs.get_all_fields(bases, dict_)
         cls._cls_meta.model_field_names = fields.keys()
+        return cls
 
-    def get_model_fields(self, dict_):
+    @staticmethod
+    def get_model_fields(dict_):
         fields = {
             key: value
-            for key, value in dict_
+            for key, value in dict_.iteritems()
             if isinstance(value, models.fields.Field)
         }
         return fields
 
-    def get_parents_fields(self, bases):
-        pass
+    @staticmethod
+    def get_parents_fields(bases):
+        names = []
+        for base_class in reversed(bases):
+            if hasattr(base_class, '_cls_meta'):
+                names.extend(base_class._cls_meta.model_field_names)
+        return names
 
-    def get_all_fields(self, bases, dict_):
+    @classmethod
+    def get_all_fields(cls, bases, dict_):
         fields = {}
-        fields.update(self.get_parents_fields(bases))
-        fields.update(self.get_model_fields(dict_))
+        fields.update(cls.get_parents_fields(bases))
+        fields.update(cls.get_model_fields(dict_))
         return fields
 
 
