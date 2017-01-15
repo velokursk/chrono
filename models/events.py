@@ -1,4 +1,7 @@
-class Event(object):
+import models
+
+
+class Event(models.base.Model):
     # event on sensor
     pass
 
@@ -12,12 +15,4 @@ class PhotoEvent(Event):
 
 
 class VideoEvent(Event):
-    pass
-
-
-class CheckpointEventQueue(object):
-    pass
-
-
-class RaceEventQueue(object):
     pass

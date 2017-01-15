@@ -1,4 +1,7 @@
-class Sensor(object):
+import models
+
+
+class Sensor(models.base.Model):
     pass
 
 
