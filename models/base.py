@@ -50,22 +50,23 @@ class FieldMcs(type):
     # we don't support field names with leading underscore
 
     def __new__(mcs, name, bases, dict_):
-        cls = type(name, bases, dict_)
-        fields = mcs.get_all_fields(bases, dict_)
-        cls._cls_meta.model_field_names = fields.keys()
-        return cls
+        klass = type(name, bases, dict_)
+        field_names = mcs.get_all_field_names(bases, dict_)
+        klass._cls_meta.model_field_names = field_names
+        mcs.update_name_on_fields(klass)
+        return klass
 
     @staticmethod
-    def get_model_fields(dict_):
-        fields = {
-            key: value
+    def get_model_field_names(dict_):
+        names = [
+            key
             for key, value in dict_.iteritems()
             if isinstance(value, models.fields.Field)
-        }
-        return fields
+        ]
+        return names
 
     @staticmethod
-    def get_parents_fields(bases):
+    def get_parents_field_names(bases):
         names = []
         for base_class in reversed(bases):
             if hasattr(base_class, '_cls_meta'):
@@ -73,11 +74,17 @@ class FieldMcs(type):
         return names
 
     @classmethod
-    def get_all_fields(cls, bases, dict_):
-        fields = {}
-        fields.update(cls.get_parents_fields(bases))
-        fields.update(cls.get_model_fields(dict_))
-        return fields
+    def get_all_field_names(cls, bases, dict_):
+        names = []
+        names.extend(cls.get_parents_field_names(bases))
+        names.extend(cls.get_model_field_names(dict_))
+        return set(names)
+
+    @classmethod
+    def update_name_on_fields(cls, klass):
+        for attr, value in klass.__dict__.iteritems():
+            if isinstance(value, models.fields.Field):
+                value.name = attr
 
 
 class Model(object):
