@@ -20,7 +20,7 @@ class ModelMeta(object):
 
     def __getattr__(self, name):
         try:
-            self.__values[name]
+            return self.__values[name]
         except KeyError:
             raise AttributeError(name)
 
@@ -93,7 +93,7 @@ class Model(object):
     _cls_meta = ClassMeta()
     _meta = None
 
-    id = None
+    id = models.fields.Field()
 
     def __init__(self, **kwargs):
         self._meta = InstanceMeta()
@@ -104,8 +104,8 @@ class Model(object):
             setattr(self, name, value)
 
     def __str__(self):
-        mask = '<{}: {}, values: {}>'
-        return mask.format(self.__class__.__name__, self.id, self._meta.values)
+        mask = '<{}: {}>'
+        return mask.format(self.__class__.__name__, self._meta.values)
 
 
 class User(Model):
