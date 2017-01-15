@@ -1,11 +1,6 @@
 # fields for models
 
 
-class FieldMcs(type):
-    # we don't support field names with leading underscore
-    pass
-
-
 class Field(object):
     name = None  # we should set this instance value from mcs
 
