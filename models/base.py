@@ -50,7 +50,7 @@ class FieldMcs(type):
     # we don't support field names with leading underscore
 
     def __new__(mcs, name, bases, dict_):
-        klass = type(name, bases, dict_)
+        klass = super(FieldMcs, mcs).__new__(mcs, name, bases, dict_)
         field_names = mcs.get_all_field_names(bases, dict_)
         klass._cls_meta.model_field_names = field_names
         mcs.update_name_on_fields(klass)
@@ -109,18 +109,17 @@ class Model(object):
 
 
 class User(Model):
-    # firstname
-    # lastname
+    firstname = models.fields.TextField(max_len=128)
+    lastname = models.fields.TextField(max_len=128)
     # bdate
-    # locality_id
+    locality_id = models.fields.IntegerField()
     pass
 
 
 class Locality(Model):
-    # city
-    # region
-    # country
-    pass
+    city = models.fields.TextField(max_len=128)
+    region = models.fields.TextField(max_len=128)
+    country = models.fields.TextField(max_len=128)
 
 
 class Race(Model):
