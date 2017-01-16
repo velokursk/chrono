@@ -48,3 +48,11 @@ class TextField(Field):
             raise TypeError
         if len(value) > self.max_len:
             raise ValueError
+
+
+class HexTextField(TextField):
+    def validate_value(self, value):
+        super(HexTextField, self).validate_value(value)
+        for ch in value:
+            if ch not in '0123456789ABCDEF':
+                raise ValueError
