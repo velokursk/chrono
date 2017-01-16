@@ -1,10 +1,14 @@
 # fields for models
+import datetime
 import sys
 
 
 class Field(object):
     name = None  # we should set this instance value from mcs
     default = None
+
+    def __init__(self):
+        pass
 
     def __get__(self, instance, klass):
         try:
@@ -56,3 +60,22 @@ class HexTextField(TextField):
         for ch in value:
             if ch not in '0123456789ABCDEF':
                 raise ValueError
+
+
+class ChoicesField(Field):
+    def __init__(self, choices, default=None):
+        self.choices = choices
+        self.default = default
+
+    def validate_value(self, value):
+        if value not in self.choices:
+            raise ValueError
+
+
+class DateField(Field):
+    def __init__(self, default=datetime.datetime.now()):
+        self.default = default
+
+    def validate_value(self, value):
+        if not isinstance(value, datetime.datetime):
+            raise TypeError
