@@ -109,6 +109,17 @@ class Model(object):
 
 
 class User(Model):
+    # firstname
+    # lastname
+    # bdate
+    # locality_id
+    pass
+
+
+class Locality(Model):
+    # city
+    # region
+    # country
     pass
 
 
@@ -122,11 +133,17 @@ class RaceConfig(Model):
 
 class Checkpoint(Model):
     # a group of sensors
+
+    # type: [start, finish, plain, cross]
+    # registration: [required, optional, absent]
     pass
 
 
 class RfidMark(Model):
-    # it's possible to ise multiple marks per user
+    # it's possible to use multiple marks per user
+
+    # type
+    # size
     pass
 
 

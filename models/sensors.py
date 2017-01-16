@@ -2,6 +2,8 @@ import models
 
 
 class Sensor(models.base.Model):
+    # id
+    # content_type
     pass
 
 
@@ -9,7 +11,7 @@ class RfidSensor(Sensor):
     pass
 
 
-class FotoSensor(Sensor):
+class PhotoSensor(Sensor):
     pass
 
 
