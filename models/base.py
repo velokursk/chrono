@@ -93,7 +93,7 @@ class Model(object):
     _cls_meta = ClassMeta()
     _meta = None
 
-    id = models.fields.Field()
+    id = models.fields.IntegerField()
 
     def __init__(self, **kwargs):
         self._meta = InstanceMeta()
