@@ -37,6 +37,8 @@ class ModelMeta(object):
 class ClassMeta(ModelMeta):
     _fields = {
         'model_field_names': list,  # list of all field names for current model
+        'primary_field': str,
+        'unique': bool,
     }
 
 
@@ -46,18 +48,38 @@ class InstanceMeta(ModelMeta):
     }
 
 
-class FieldMcs(type):
-    # we don't support field names with leading underscore
+class ModelCreationHandler(object):
+    def __init__(self, context):
+        self.context = context
+        # name, bases, dict_
+        # model_field_names, parent_field_names,
 
-    def __new__(mcs, name, bases, dict_):
-        klass = super(FieldMcs, mcs).__new__(mcs, name, bases, dict_)
-        field_names = mcs.get_all_field_names(bases, dict_)
-        klass._cls_meta.model_field_names = field_names
-        mcs.update_name_on_fields(klass)
-        return klass
+    def run_before(self):
+        return self.context
+
+    def run_after(self):
+        return self.context
+
+
+class FieldsHandler(ModelCreationHandler):
+    def run_before(self):
+        self.context['model_field_names'] = self._get_model_field_names(self.context['dict_'])
+        self.context['parent_field_names'] = self._get_parents_field_names(self.context['bases'])
+        all_names = []
+        all_names.extend(self.context['parent_field_names'])
+        all_names.extend(self.context['model_field_names'])
+        self.context['field_names'] = list(set(all_names))
+        return self.context
+
+    def run_after(self):
+        self.context['klass']._cls_meta.model_field_names = self.context['field_names']
+        for attr, value in self.context['klass'].__dict__.iteritems():
+            if isinstance(value, models.fields.Field):
+                value.name = attr
+        return self.context
 
     @staticmethod
-    def get_model_field_names(dict_):
+    def _get_model_field_names(dict_):
         names = [
             key
             for key, value in dict_.iteritems()
@@ -66,19 +88,42 @@ class FieldMcs(type):
         return names
 
     @staticmethod
-    def get_parents_field_names(bases):
+    def _get_parents_field_names(bases):
         names = []
         for base_class in reversed(bases):
             if hasattr(base_class, '_cls_meta'):
                 names.extend(base_class._cls_meta.model_field_names)
         return names
 
-    @classmethod
-    def get_all_field_names(cls, bases, dict_):
-        names = []
-        names.extend(cls.get_parents_field_names(bases))
-        names.extend(cls.get_model_field_names(dict_))
-        return set(names)
+
+class FieldMcs(type):
+    # we don't support field names with leading underscore
+
+    def __new__(mcs, name, bases, dict_):
+        context = {
+            'name': name,
+            'bases': bases,
+            'dict_': dict_,
+        }
+        prepared_context = mcs.prepare_context(context)
+        klass = super(FieldMcs, mcs).__new__(mcs, name, bases, dict_)
+        prepared_klass = mcs.customize_class(klass, prepared_context)
+        return prepared_klass
+
+    @staticmethod
+    def prepare_context(context):
+        handlers = [FieldsHandler]
+        for handler in handlers:
+            context = handler(context).run_before()
+        return context
+
+    @staticmethod
+    def customize_class(klass, context):
+        context['klass'] = klass
+        handlers = [FieldsHandler]
+        for handler in handlers:
+            context = handler(context).run_after()
+        return context['klass']
 
     @classmethod
     def update_name_on_fields(cls, klass):
@@ -100,7 +145,7 @@ class Model(object):
 
         for name, value in kwargs.iteritems():
             if name not in self._cls_meta.model_field_names:
-                raise ValueError
+                raise ValueError(self._cls_meta.model_field_names)
             setattr(self, name, value)
 
     def __str__(self):
@@ -111,7 +156,7 @@ class Model(object):
 class User(Model):
     firstname = models.fields.TextField(max_len=128)
     lastname = models.fields.TextField(max_len=128)
-    bdate = models.fields.DateField(max_len=128)
+    bdate = models.fields.DateField()
     locality_id = models.fields.IntegerField()
 
 
