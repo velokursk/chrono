@@ -111,9 +111,8 @@ class Model(object):
 class User(Model):
     firstname = models.fields.TextField(max_len=128)
     lastname = models.fields.TextField(max_len=128)
-    # bdate
+    bdate = models.fields.DateField(max_len=128)
     locality_id = models.fields.IntegerField()
-    pass
 
 
 class Locality(Model):
