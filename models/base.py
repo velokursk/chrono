@@ -1,4 +1,5 @@
 import models.fields
+import models.errors
 
 
 class ModelMeta(object):
@@ -36,7 +37,7 @@ class ModelMeta(object):
 
 class ClassMeta(ModelMeta):
     _fields = {
-        'model_field_names': list,  # list of all field names for current model
+        'field_names': list,  # list of all field names for current model
         'primary_field': str,
         'unique': bool,
     }
@@ -52,7 +53,7 @@ class ModelCreationHandler(object):
     def __init__(self, context):
         self.context = context
         # name, bases, dict_
-        # model_field_names, parent_field_names,
+        # model_field_names, parent_field_names, field_names
 
     def run_before(self):
         return self.context
@@ -72,7 +73,7 @@ class FieldsHandler(ModelCreationHandler):
         return self.context
 
     def run_after(self):
-        self.context['klass']._cls_meta.model_field_names = self.context['field_names']
+        self.context['klass']._cls_meta.field_names = self.context['field_names']
         for attr, value in self.context['klass'].__dict__.iteritems():
             if isinstance(value, models.fields.Field):
                 value.name = attr
@@ -92,7 +93,38 @@ class FieldsHandler(ModelCreationHandler):
         names = []
         for base_class in reversed(bases):
             if hasattr(base_class, '_cls_meta'):
-                names.extend(base_class._cls_meta.model_field_names)
+                names.extend(base_class._cls_meta.field_names)
+        return names
+
+
+class PrimaryHandler(ModelCreationHandler):
+    # we should have one and only one primary key
+    def run_after(self):
+        # set primary_key
+        pk_name = self._get_pk_name()
+        self.context['klass']._cls_meta['primary_field'] = pk_name
+
+    def _get_pk_name(self):
+        pk_names = []
+        pk_names.extend(self.__get_pk_names_from_parents())
+        pk_names.extend(self.__get_pk_names_from_model_fields())
+        if len(set(pk_names)) != 1:
+            raise models.errors.PrimaryKeyError
+        return pk_names[0]
+
+    def __get_pk_names_from_parents(self):
+        names = []
+        for base_class in reversed(self.context['bases']):
+            for attr, value in base_class.__dict__.iteritems():
+                if isinstance(value, models.fields.Field) and value.primary:
+                    names.append(attr)
+        return names
+
+    def __get_pk_names_from_model_fields(self):
+        names = []
+        for attr, value in self.context['klass'].__dict__.iteritems():
+            if isinstance(value, models.fields.Field) and value.primary:
+                names.append(attr)
         return names
 
 
@@ -112,7 +144,9 @@ class FieldMcs(type):
 
     @staticmethod
     def prepare_context(context):
-        handlers = [FieldsHandler]
+        handlers = [
+            FieldsHandler,  # this one should be the first
+        ]
         for handler in handlers:
             context = handler(context).run_before()
         return context
@@ -120,7 +154,10 @@ class FieldMcs(type):
     @staticmethod
     def customize_class(klass, context):
         context['klass'] = klass
-        handlers = [FieldsHandler]
+        handlers = [
+            FieldsHandler,  # this one should be the first
+            PrimaryHandler,
+        ]
         for handler in handlers:
             context = handler(context).run_after()
         return context['klass']
@@ -144,8 +181,8 @@ class Model(object):
         self._meta = InstanceMeta()
 
         for name, value in kwargs.iteritems():
-            if name not in self._cls_meta.model_field_names:
-                raise ValueError(self._cls_meta.model_field_names)
+            if name not in self._cls_meta.field_names:
+                raise ValueError
             setattr(self, name, value)
 
     def __str__(self):
