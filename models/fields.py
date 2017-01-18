@@ -6,16 +6,29 @@ import sys
 class Field(object):
     name = None  # we should set this instance value from mcs
     default = None
+    primary = False
 
-    def __init__(self):
-        pass
+    def __init__(self, **common_kwargs):
+        self.common = {}
+
+        if 'default' in common_kwargs:
+            self.validate_value(common_kwargs['default'])
+            self.common['default'] = common_kwargs['default']
+            self.common['has_default'] = True
+        else:
+            self.common['has_default'] = False
+
+        self.common['primary'] = bool(common_kwargs.get('primary', False))
+
+        unique = bool(common_kwargs.get('unique', False))
+        self.common['unique'] = unique or self.common['primary']
 
     def __get__(self, instance, klass):
         try:
             return instance._meta.values[self.name]
         except KeyError:
-            if self.default is not None:
-                return self.default
+            if 'default' in self.common:
+                return self.common['default']
             raise AttributeError
 
     def __set__(self, instance, value):
@@ -30,10 +43,10 @@ class Field(object):
 
 
 class IntegerField(Field):
-    def __init__(self, default=None, minimum=0, maximum=sys.maxint):
+    def __init__(self, minimum=0, maximum=sys.maxint, **common_kwargs):
+        super(IntegerField, self).__init__(minimum=0, maximum=sys.maxint, **common_kwargs)
         self.minimum = minimum
         self.maximum = maximum
-        self.default = default
 
     def validate_value(self, value):
         if not isinstance(value, int):
@@ -43,9 +56,9 @@ class IntegerField(Field):
 
 
 class TextField(Field):
-    def __init__(self, default=None, max_len=1024):
+    def __init__(self, max_len=1024, **common_kwargs):
+        super(TextField, self).__init__(max_len=1024, **common_kwargs)
         self.max_len = max_len
-        self.default = default
 
     def validate_value(self, value):
         if not isinstance(value, basestring):
@@ -63,9 +76,9 @@ class HexTextField(TextField):
 
 
 class ChoicesField(Field):
-    def __init__(self, choices, default=None):
+    def __init__(self, choices, **common_kwargs):
+        super(ChoicesField, self).__init__(choices, **common_kwargs)
         self.choices = choices
-        self.default = default
 
     def validate_value(self, value):
         if value not in self.choices:
@@ -73,9 +86,6 @@ class ChoicesField(Field):
 
 
 class DateField(Field):
-    def __init__(self, default=datetime.datetime.now()):
-        self.default = default
-
     def validate_value(self, value):
         if not isinstance(value, datetime.datetime):
             raise TypeError

@@ -102,7 +102,8 @@ class PrimaryHandler(ModelCreationHandler):
     def run_after(self):
         # set primary_key
         pk_name = self._get_pk_name()
-        self.context['klass']._cls_meta['primary_field'] = pk_name
+        self.context['klass']._cls_meta.primary_field = pk_name
+        return self.context
 
     def _get_pk_name(self):
         pk_names = []
@@ -116,14 +117,16 @@ class PrimaryHandler(ModelCreationHandler):
         names = []
         for base_class in reversed(self.context['bases']):
             for attr, value in base_class.__dict__.iteritems():
-                if isinstance(value, models.fields.Field) and value.primary:
-                    names.append(attr)
+                if isinstance(value, models.fields.Field):
+                    if value.common['primary']:
+                        names.append(attr)
         return names
 
     def __get_pk_names_from_model_fields(self):
         names = []
         for attr, value in self.context['klass'].__dict__.iteritems():
-            if isinstance(value, models.fields.Field) and value.primary:
+
+            if isinstance(value, models.fields.Field) and value.common['primary']:
                 names.append(attr)
         return names
 
@@ -175,7 +178,7 @@ class Model(object):
     _cls_meta = ClassMeta()
     _meta = None
 
-    id = models.fields.IntegerField()
+    id = models.fields.IntegerField(primary=True)
 
     def __init__(self, **kwargs):
         self._meta = InstanceMeta()
@@ -235,12 +238,4 @@ class RfidMark(Model):
 class Emergency(Model):
     # object that represents context which we can't handle
     # requires human reaction
-    pass
-
-
-class CheckpointEmergency(Emergency):
-    pass
-
-
-class RaceEmergency(Emergency):
     pass
