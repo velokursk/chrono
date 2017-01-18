@@ -189,6 +189,11 @@ class Model(object):
         mask = '<{}: {}>'
         return mask.format(self.__class__.__name__, self._meta.values)
 
+    @property
+    def pk(self):
+        pk_name = self._cls_meta['primary_field']
+        return getattr(self, pk_name)
+
 
 class User(Model):
     firstname = models.fields.TextField(max_len=128)
