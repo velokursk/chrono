@@ -27,7 +27,7 @@ class Field(object):
         try:
             return instance._meta.values[self.name]
         except KeyError:
-            if 'default' in self.common:
+            if self.common['has_default']:
                 return self.common['default']
             raise AttributeError
 
