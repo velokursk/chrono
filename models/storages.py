@@ -1,8 +1,11 @@
 class Storage(object):
+    def __init__(self, model_cls):
+        self.model_cls = model_cls
+
     def set(self, model):
         pass
 
-    def get(self, model_cls, **query):
+    def get(self, **query):
         pass
 
     def drop(self, models):
@@ -16,7 +19,7 @@ class SingletonRamStorage(object):
         storage = self._get_model_storage(model.__class__)
         storage[model.pk] = model
 
-    def get(self, model_cls, **query):
+    def get(self, **query):
         storage = self._get_model_storage(model_cls)
         models = storage.values()
         for attr, value in query.iteritems():
@@ -32,8 +35,8 @@ class SingletonRamStorage(object):
             storage = self._get_model_storage(model.__class__)
             del storage[model.pk]
 
-    def _get_model_storage(self, model):
-        model_key = model.__class__
+    def _get_model_storage(self):
+        model_key = self.model_cls
         try:
             return self.items[model_key]
         except KeyError:
