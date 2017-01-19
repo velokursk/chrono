@@ -5,7 +5,6 @@ import sys
 
 class Field(object):
     name = None  # we should set this instance value from mcs
-    default = None
 
     def __init__(self, **common_kwargs):
         if 'default' in common_kwargs:
