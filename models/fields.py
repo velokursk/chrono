@@ -6,7 +6,6 @@ import sys
 class Field(object):
     name = None  # we should set this instance value from mcs
     default = None
-    primary = False
 
     def __init__(self, **common_kwargs):
         self.common = {}
@@ -24,6 +23,8 @@ class Field(object):
         self.common['unique'] = unique or self.common['primary']
 
     def __get__(self, instance, klass):
+        if instance is None:
+            return self
         try:
             return instance._meta.values[self.name]
         except KeyError:
@@ -44,9 +45,9 @@ class Field(object):
 
 class IntegerField(Field):
     def __init__(self, minimum=0, maximum=sys.maxint, **common_kwargs):
-        super(IntegerField, self).__init__(minimum=0, maximum=sys.maxint, **common_kwargs)
         self.minimum = minimum
         self.maximum = maximum
+        super(IntegerField, self).__init__(minimum=minimum, maximum=maximum, **common_kwargs)
 
     def validate_value(self, value):
         if not isinstance(value, int):
@@ -57,8 +58,8 @@ class IntegerField(Field):
 
 class TextField(Field):
     def __init__(self, max_len=1024, **common_kwargs):
-        super(TextField, self).__init__(max_len=1024, **common_kwargs)
         self.max_len = max_len
+        super(TextField, self).__init__(max_len=1024, **common_kwargs)
 
     def validate_value(self, value):
         if not isinstance(value, basestring):
@@ -77,8 +78,8 @@ class HexTextField(TextField):
 
 class ChoicesField(Field):
     def __init__(self, choices, **common_kwargs):
-        super(ChoicesField, self).__init__(choices, **common_kwargs)
         self.choices = choices
+        super(ChoicesField, self).__init__(choices, **common_kwargs)
 
     def validate_value(self, value):
         if value not in self.choices:

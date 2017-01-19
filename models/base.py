@@ -1,3 +1,5 @@
+import datetime
+
 import models.fields
 import models.errors
 
@@ -59,6 +61,12 @@ class ModelCreationHandler(object):
         return self.context
 
     def run_after(self):
+        return self.context
+
+
+class ClsMetaHandler(ModelCreationHandler):
+    def run_before(self):
+        self.context['dict_']['_cls_meta'] = ClassMeta()
         return self.context
 
 
@@ -148,7 +156,8 @@ class FieldMcs(type):
     @staticmethod
     def prepare_context(context):
         handlers = [
-            FieldsHandler,  # this one should be the first
+            ClsMetaHandler,
+            FieldsHandler,
         ]
         for handler in handlers:
             context = handler(context).run_before()
@@ -158,24 +167,17 @@ class FieldMcs(type):
     def customize_class(klass, context):
         context['klass'] = klass
         handlers = [
-            FieldsHandler,  # this one should be the first
+            FieldsHandler,
             PrimaryHandler,
         ]
         for handler in handlers:
             context = handler(context).run_after()
         return context['klass']
 
-    @classmethod
-    def update_name_on_fields(cls, klass):
-        for attr, value in klass.__dict__.iteritems():
-            if isinstance(value, models.fields.Field):
-                value.name = attr
-
 
 class Model(object):
     __metaclass__ = FieldMcs
 
-    _cls_meta = ClassMeta()
     _meta = None
 
     id = models.fields.IntegerField(primary=True)
@@ -183,14 +185,28 @@ class Model(object):
     def __init__(self, **kwargs):
         self._meta = InstanceMeta()
 
-        for name, value in kwargs.iteritems():
-            if name not in self._cls_meta.field_names:
-                raise ValueError
-            setattr(self, name, value)
+        self.__check_for_unknown_params(kwargs)
+        self.__check_for_initial_values(kwargs)
+
+        self._meta.values.update(kwargs)
 
     def __str__(self):
         mask = '<{}: {}>'
         return mask.format(self.__class__.__name__, self._meta.values)
+
+    def __check_for_unknown_params(self, kwargs):
+        for name, value in kwargs.iteritems():
+            if name not in self._cls_meta.field_names:
+                raise models.errors.UnknownParameterError
+
+    def __check_for_initial_values(self, kwargs):
+        fields_wo_initial_value = [
+            k
+            for k in self._cls_meta.field_names
+            if k not in kwargs
+        ]
+        if not all([getattr(self.__class__, name).common['has_default'] for name in fields_wo_initial_value]):
+            raise models.errors.ModelError
 
     @property
     def pk(self):
@@ -201,8 +217,8 @@ class Model(object):
 class User(Model):
     firstname = models.fields.TextField(max_len=128)
     lastname = models.fields.TextField(max_len=128)
-    bdate = models.fields.DateField()
-    locality_id = models.fields.IntegerField()
+    bdate = models.fields.DateField(default=datetime.datetime.now())
+    locality_id = models.fields.IntegerField(default=0)
 
 
 class Locality(Model):
