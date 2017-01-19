@@ -8,19 +8,17 @@ class Field(object):
     default = None
 
     def __init__(self, **common_kwargs):
-        self.common = {}
-
         if 'default' in common_kwargs:
             self.validate_value(common_kwargs['default'])
-            self.common['default'] = common_kwargs['default']
-            self.common['has_default'] = True
+            self.default = common_kwargs['default']
+            self.has_default = True
         else:
-            self.common['has_default'] = False
+            self.has_default = False
 
-        self.common['primary'] = bool(common_kwargs.get('primary', False))
+        self.primary = bool(common_kwargs.get('primary', False))
 
         unique = bool(common_kwargs.get('unique', False))
-        self.common['unique'] = unique or self.common['primary']
+        self.unique = unique or self.primary
 
     def __get__(self, instance, klass):
         if instance is None:
@@ -28,8 +26,8 @@ class Field(object):
         try:
             return instance._meta.values[self.name]
         except KeyError:
-            if self.common['has_default']:
-                return self.common['default']
+            if self.has_default:
+                return self.default
             raise AttributeError
 
     def __set__(self, instance, value):

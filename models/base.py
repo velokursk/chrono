@@ -126,7 +126,7 @@ class PrimaryHandler(ModelCreationHandler):
         for base_class in reversed(self.context['bases']):
             for attr, value in base_class.__dict__.iteritems():
                 if isinstance(value, models.fields.Field):
-                    if value.common['primary']:
+                    if value.primary:
                         names.append(attr)
         return names
 
@@ -134,7 +134,7 @@ class PrimaryHandler(ModelCreationHandler):
         names = []
         for attr, value in self.context['klass'].__dict__.iteritems():
 
-            if isinstance(value, models.fields.Field) and value.common['primary']:
+            if isinstance(value, models.fields.Field) and value.primary:
                 names.append(attr)
         return names
 
@@ -205,7 +205,7 @@ class Model(object):
             for k in self._cls_meta.field_names
             if k not in kwargs
         ]
-        if not all([getattr(self.__class__, name).common['has_default'] for name in fields_wo_initial_value]):
+        if not all([getattr(self.__class__, name).has_default for name in fields_wo_initial_value]):
             raise models.errors.ModelError
 
     @property
