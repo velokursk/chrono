@@ -41,7 +41,7 @@ class ClassMeta(ModelMeta):
     _fields = {
         'field_names': list,  # list of all field names for current model
         'primary_field': str,
-        'unique': bool,
+        'unique_fields': list,
     }
 
 
@@ -79,12 +79,11 @@ class FieldsHandler(ModelCreationHandler):
 
     def run_after(self):
         self.context['klass']._cls_meta.field_names = self.context['field_names']
-        for attr, value in self.context['klass'].__dict__.iteritems():
-            if isinstance(value, models.fields.Field):
-                value.name = attr
+        self.context['klass']._cls_meta.unique_fields = self._get_fields_with_setting('unique', True)
+        self._set_name_for_fields()
         return self.context
 
-    @property
+    @property  # before
     def model_field_names(self):
         if 'model_field_names' in self.context:
             return self.context['model_field_names']
@@ -96,7 +95,7 @@ class FieldsHandler(ModelCreationHandler):
         self.context['model_field_names'] = names
         return names
 
-    @property
+    @property  # before
     def parents_field_names(self):
         if 'parents_field_names' in self.context:
             return self.context['parents_field_names']
@@ -107,8 +106,12 @@ class FieldsHandler(ModelCreationHandler):
         self.context['parents_field_names'] = names
         return names
 
-    @property
+    @property  # before and after
     def field_names(self):
+        if 'klas' in self.context:
+            all_names = self.context['klass']._cls_meta.field_names
+            if all_names:
+                return all_names
         if 'field_names' in self.context:
             return self.context['field_names']
         all_names = []
@@ -116,6 +119,20 @@ class FieldsHandler(ModelCreationHandler):
         all_names.extend(self.model_field_names)
         self.context['field_names'] = list(set(all_names))
         return self.context['field_names']
+
+    def _set_name_for_fields(self):
+        for attr, value in self.context['klass'].__dict__.iteritems():
+            if isinstance(value, models.fields.Field):
+                value.name = attr
+
+    def _get_fields_with_setting(self, setting_name, setting_value):
+        result = []
+        for field_name in self.field_names:
+            field_descriptor = getattr(self.context['klass'], field_name)
+            if hasattr(field_descriptor, setting_name):
+                if getattr(field_descriptor, setting_name) == setting_value:
+                    result.append(field_name)
+        return result
 
 
 class PrimaryHandler(ModelCreationHandler):
