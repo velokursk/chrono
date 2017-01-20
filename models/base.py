@@ -72,12 +72,9 @@ class ClsMetaHandler(ModelCreationHandler):
 
 class FieldsHandler(ModelCreationHandler):
     def run_before(self):
-        self.context['model_field_names'] = self._get_model_field_names(self.context['dict_'])
-        self.context['parent_field_names'] = self._get_parents_field_names(self.context['bases'])
-        all_names = []
-        all_names.extend(self.context['parent_field_names'])
-        all_names.extend(self.context['model_field_names'])
-        self.context['field_names'] = list(set(all_names))
+        self.context['parents_field_names'] = self.parents_field_names
+        self.context['model_field_names'] = self.model_field_names
+        self.context['field_names'] = self.field_names
         return self.context
 
     def run_after(self):
@@ -87,22 +84,38 @@ class FieldsHandler(ModelCreationHandler):
                 value.name = attr
         return self.context
 
-    @staticmethod
-    def _get_model_field_names(dict_):
+    @property
+    def model_field_names(self):
+        if 'model_field_names' in self.context:
+            return self.context['model_field_names']
         names = [
             key
-            for key, value in dict_.iteritems()
+            for key, value in self.context['dict_'].iteritems()
             if isinstance(value, models.fields.Field)
         ]
+        self.context['model_field_names'] = names
         return names
 
-    @staticmethod
-    def _get_parents_field_names(bases):
+    @property
+    def parents_field_names(self):
+        if 'parents_field_names' in self.context:
+            return self.context['parents_field_names']
         names = []
-        for base_class in reversed(bases):
+        for base_class in reversed(self.context['bases']):
             if hasattr(base_class, '_cls_meta'):
                 names.extend(base_class._cls_meta.field_names)
+        self.context['parents_field_names'] = names
         return names
+
+    @property
+    def field_names(self):
+        if 'field_names' in self.context:
+            return self.context['field_names']
+        all_names = []
+        all_names.extend(self.parents_field_names)
+        all_names.extend(self.model_field_names)
+        self.context['field_names'] = list(set(all_names))
+        return self.context['field_names']
 
 
 class PrimaryHandler(ModelCreationHandler):
