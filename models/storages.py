@@ -12,15 +12,15 @@ class Storage(object):
         pass
 
 
-class SingletonRamStorage(object):
+class SingletonRamStorage(Storage):
     items = {}
 
     def set(self, model):
-        storage = self._get_model_storage(model.__class__)
+        storage = self._get_model_storage()
         storage[model.pk] = model
 
     def get(self, **query):
-        storage = self._get_model_storage(model_cls)
+        storage = self._get_model_storage()
         models = storage.values()
         for attr, value in query.iteritems():
             models = [

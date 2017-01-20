@@ -1,7 +1,8 @@
 import datetime
 
-import models.fields
 import models.errors
+import models.fields
+import models.managers
 
 
 class ModelMeta(object):
@@ -209,6 +210,7 @@ class Model(object):
     __metaclass__ = FieldMcs
 
     _meta = None
+    objects = models.managers.ModelManager()
 
     id = models.fields.IntegerField(primary=True)
 
@@ -240,8 +242,11 @@ class Model(object):
 
     @property
     def pk(self):
-        pk_name = self._cls_meta['primary_field']
+        pk_name = self._cls_meta.primary_field
         return getattr(self, pk_name)
+
+    def save(self):
+        return self.objects.save(self)
 
 
 class User(Model):

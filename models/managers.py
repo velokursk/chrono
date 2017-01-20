@@ -39,8 +39,9 @@ class ModelManager(Manager):
         self.storage_cls = storage_cls
 
     def __get__(self, instance, klass):
-        if not hasattr(self.klass):
+        if not hasattr(self, 'klass'):
             self.klass = klass
+            # raise ValueError(klass, self.storage_cls)
             self.storage = self.storage_cls(klass)
         return self
 
@@ -55,13 +56,21 @@ class ModelManager(Manager):
 
     def get(self, **query):
         result = self.storage.get(**query)
-        if len(result) != 1:
+        if len(result) > 1:
             raise models.errors.MoreThanOneError
+        elif len(result) == 0:
+            raise models.errors.DoesNotExistError
         return result[0]
 
     def save(self, model):
         for field in model._cls_meta.unique_fields:
-            if self.get(**{field: getattr(model, field)}):
+            filtered_models = [
+                m
+                for m in self.filter(**{field: getattr(model, field)})
+                if model.pk != m.pk
+            ]
+            if filtered_models:
+                # raise ValueError(self, model, res)
                 raise models.errors.FieldNotUniqueError
         self.storage.set(model)
 

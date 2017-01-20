@@ -16,3 +16,7 @@ class UnknownParameterError(ModelError):
 
 class FieldNotUniqueError(ModelError):
     pass
+
+
+class DoesNotExistError(ModelError):
+    pass
