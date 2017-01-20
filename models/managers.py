@@ -60,6 +60,9 @@ class ModelManager(Manager):
         return result[0]
 
     def save(self, model):
+        for field in model._cls_meta.unique_fields:
+            if self.get(**{field: getattr(model, field)}):
+                raise models.errors.FieldNotUniqueError
         self.storage.set(model)
 
     def get_last_created_pk(self):

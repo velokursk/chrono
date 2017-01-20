@@ -12,3 +12,7 @@ class MoreThanOneError(ModelError):
 
 class UnknownParameterError(ModelError):
     pass
+
+
+class FieldNotUniqueError(ModelError):
+    pass
