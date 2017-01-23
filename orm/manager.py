@@ -1,5 +1,5 @@
-import models.storages
-import models.errors
+import orm.storage
+import orm.error
 
 
 class Manager(object):
@@ -35,7 +35,7 @@ class Manager(object):
 
 
 class ModelManager(Manager):
-    def __init__(self, storage_cls=models.storages.SingletonRamStorage):
+    def __init__(self, storage_cls=orm.storage.SingletonRamStorage):
         self.storage_cls = storage_cls
 
     def __get__(self, instance, klass):
@@ -57,9 +57,9 @@ class ModelManager(Manager):
     def get(self, **query):
         result = self.storage.get(**query)
         if len(result) > 1:
-            raise models.errors.MoreThanOneError
+            raise orm.error.MoreThanOneError
         elif len(result) == 0:
-            raise models.errors.DoesNotExistError
+            raise orm.error.DoesNotExistError
         return result[0]
 
     def save(self, model):
@@ -71,7 +71,7 @@ class ModelManager(Manager):
             ]
             if filtered_models:
                 # raise ValueError(self, model, res)
-                raise models.errors.FieldNotUniqueError
+                raise orm.error.FieldNotUniqueError
         self.storage.set(model)
 
     def get_last_created_pk(self):
