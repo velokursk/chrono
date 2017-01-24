@@ -87,3 +87,19 @@ class DateField(Field):
     def validate_value(self, value):
         if not isinstance(value, datetime.datetime):
             raise TypeError
+
+
+class ForeignKeyField(Field):
+    def __init__(self, model_cls, multi=False, **common_kwargs):
+        self.model_cls = model_cls
+        self.multi = multi
+        self.pk_name = model_cls._cls_meta.primary_field
+        super(ForeignKeyField, self).__init__(model_cls, multi, **common_kwargs)
+
+    def __get__(self, instance, klass):
+        value = super(ForeignKeyField, self).__get__(instance, klass)
+        result = [
+            self.model_cls.objects.get(**{self.pk_name: pk})
+            for pk in value
+        ]
+        return result
